@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MusicPlayer</string>
+    <string name="media_url_mp3" translatable="false">https://storage.googleapis.com/exoplayer-test-media-0/Jazz_In_Paris.mp3</string>
+    <string name="artist">Artist</string>
+    <string name="track">Track</string>
+    <string name="album">ALBUM</string>
+    <string name="album_name">Album name</string>
+    <string name="published" translatable="false">0000</string>
+    <string name="genre">genre</string>
+    <string name="empty_list">Tracklist is empty.\nIf you add a new track, it will appear here</string>
+    <string name="error_loading">Something went wrong. Try again later.</string>
+    <string name="dialog_positive_button">OK</string>
+</resources>

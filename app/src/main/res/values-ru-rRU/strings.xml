@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MusicPlayer</string>
+    <string name="artist">Исполнитель</string>
+    <string name="track">Песня</string>
+    <string name="album">АЛЬБОМ</string>
+    <string name="album_name">Название альбома</string>
+    <string name="genre">жанр</string>
+    <string name="empty_list">Треклист пуст.\nЕсли добавите новый трек, то он появится здесь</string>
+    <string name="error_loading">Что-то пошло не так. Попробуйте позднее.</string>
+    <string name="dialog_positive_button">OK</string>
+</resources>
