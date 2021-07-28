@@ -6,9 +6,13 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import ru.netology.musicplayer.R
 import ru.netology.musicplayer.adapter.OnInteractionListener
 import ru.netology.musicplayer.adapter.TrackListAdapter
@@ -28,6 +32,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private var playWhenReady = true
     private var currentWindow = 0
     private var playbackPosition = 0L
+    private val mediaItemTransitionListener: Player.Listener = mediaItemTransitionListener()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +43,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             override fun onPlayMedia(track: Track) {
                 initializePlayer(track)
                 binding.titlePlayButton.setImageResource(R.drawable.ic_title_pause)
-                binding.tracklist.adapter?.notifyDataSetChanged()
             }
 
             override fun onPause(track: Track) {
@@ -62,10 +66,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                     titlePlayButton.setOnClickListener {
                         if (player?.isPlaying == false) {
                             initializePlayer(null)
-                            titlePlayButton.setImageResource(R.drawable.ic_title_pause)
                         } else {
                             stopPlaying()
                             titlePlayButton.setImageResource(R.drawable.ic_title_play)
+                            viewModel.data.value?.map { it.playing = false }
                             binding.tracklist.adapter?.notifyDataSetChanged()
                         }
                     }
@@ -123,6 +127,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 }
                 stopPlaying()
                 exoPlayer.addMediaItems(mediaItems)
+                exoPlayer.addListener(mediaItemTransitionListener)
                 exoPlayer.seekTo(currentWindow, playbackPosition)
                 exoPlayer.playWhenReady = playWhenReady
                 exoPlayer.prepare()
@@ -135,6 +140,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             playbackPosition = this.currentPosition
             currentWindow = this.currentWindowIndex
             playWhenReady = this.playWhenReady
+            removeListener(mediaItemTransitionListener)
             release()
         }
         player = null
@@ -142,10 +148,48 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     private fun stopPlaying() {
         player?.run {
-            viewModel.data.value?.map { track ->
-                track.playing = false
-            }
             release()
+        }
+    }
+
+    private fun mediaItemTransitionListener() = object : Player.Listener {
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            lifecycleScope.launch {
+                when (reason) {
+                    ExoPlayer.MEDIA_ITEM_TRANSITION_REASON_AUTO -> {
+                        refreshUI()
+                    }
+                    Player.MEDIA_ITEM_TRANSITION_REASON_SEEK -> {
+                        delay(10)
+                        if (player?.isPlaying == true) refreshUI()
+                    }
+                    else -> null
+                }
+            }
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            when (isPlaying) {
+                false -> {
+                    viewModel.data.value?.map { it.playing = false }
+                    binding.titlePlayButton.setImageResource(R.drawable.ic_title_play)
+                    binding.tracklist.adapter?.notifyDataSetChanged()
+                }
+                true -> {
+                    binding.titlePlayButton.setImageResource(R.drawable.ic_title_pause)
+                    refreshUI()
+                }
+            }
+        }
+    }
+
+    private fun refreshUI() {
+        viewModel.data.value?.let { tracklist ->
+            tracklist.map { it.playing = false }
+            player?.let { currentWindow = player!!.currentWindowIndex }
+            val playingTrack = tracklist.find { it.id == player?.nextWindowIndex }
+            playingTrack?.playing = true
+            binding.tracklist.adapter?.notifyDataSetChanged()
         }
     }
 }
